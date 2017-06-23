@@ -1,0 +1,145 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+<style>
+    .input-group.input-group-unstyled input.form-control {
+        -webkit-border-radius: 4px;
+        -moz-border-radius: 4px;
+        border-radius: 4px;
+    }
+
+    .input-group-unstyled .input-group-addon {
+        border-radius: 4px;
+        border: 0px;
+        background-color: transparent;
+    }
+
+ tbody {
+    display:block;
+    max-height:400px;
+    overflow-y:scroll;
+}
+thead, tbody tr {
+    display:table;
+    width:100%;
+    table-layout:fixed;
+}
+</style>
+<link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet" />
+<script src="~/Scripts/angular.min.js"></script>
+<div style="margin-top:30px;" ng-app="cityPopulationApp" ng-controller="cityPopulationControl">
+    <div class="container" ng-hide="ShowDetails">
+        <div class="row">
+            <div class="col-lg-3" style="margin-left: 375px;">
+                <div class="row">
+                    <label class="control-label col-sm-2" for="inputGroup">City: </label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" ng-model="query"
+                               placeholder="Search" id="inputGroup" />
+                        <span class="input-group-addon" style="cursor:pointer" ng-click="SearchText=query">
+                            <i class="fa fa-search"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row " style="width:60%; margin-top: 18px">
+            <div class="col-md-12">
+
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <td style="font-weight: bold;">City</td>
+                            <td style="font-weight: bold;">State</td>
+                            <td style="font-weight: bold;">ZIP</td>
+                            <td style="font-weight: bold;">Population</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="citydata in CityData | filter: {city:SearchText} |orderBy:city ">
+                            <td><a style="cursor:pointer;font:bold" ng-click="CitySelected(citydata)">{{citydata.city}}</a></td>
+                            <td ng-bind="citydata.state"></td>
+                            <td ng-bind="citydata._id"></td>
+                            <td ng-bind="citydata.pop"></td>
+                        </tr>
+                        <tr ng-show="(CityData | filter:{city:SearchText}).length == 0">
+                            <td colspan="4">No search records found</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+        <div class="container" ng-show="ShowDetails">
+            <h2>Details</h2>
+            <div class="panel panel-default" style="width: 400px">
+                <h2><span style="margin-left: 5px;">{{CityDetails.city}}</span></h2>
+                <div class="panel-body">
+                    <div class="form-group">
+                        <div class="row" style="margin-left: 5px;">
+                            State: {{CityDetails.state}}
+                        </div>
+                        <div class="row" style="margin-left: 5px;">
+                            Population:  <input type="number" id="txtPopulation" name="txtPopulation" ng-model="CityDetails.pop" />
+                        </div>
+                        <div class="row" style="margin-left: 5px;">
+                            Zip: {{CityDetails._id}}
+                        </div>
+                        <div class="row" style="margin-top: 20px; margin-left: 5px;">
+                            <button type="button" title="Save" class="btn" ng-click="UpdateCity()">Save</button> &nbsp;
+                            <button type="button" title="Back" class="btn" ng-click="BackToList()">Back</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+<script type="text/javascript">
+    var app = angular.module('cityPopulationApp', []);
+    app.controller('cityPopulationControl', function ($scope, $http, $filter) {
+        //"~/App_Data/Cities.json""
+        var url = '@Url.Action("GetJsonData", "Home")';
+        $scope.CityData = [];
+        $scope.ActualCityData = [];
+        $scope.CityDetails = {};
+        $scope.ShowDetails = false;
+        $http.get('/Home/GetJsonData')
+           .success(function (result) {
+               $scope.ActualCityData = result;
+               $scope.CityData = angular.copy($scope.ActualCityData);
+           })
+           .error(function (data) {
+               console.log(data);
+           });
+
+        $scope.UpdateCity = function()
+        {
+            var updDetails = $scope.CityDetails;
+            var config = {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }
+            var url = '@Url.Action("UpdateCityDetails", "Home")';
+            $http.post(url, { 'city': updDetails.city, 'population': updDetails.pop }, config).then(function (response) {
+                if (response.data)
+                {
+                    $scope.ShowDetails = false;
+                    $scope.CityDetails = {};
+                }
+            }, function (response) {
+                alert('Method not found');
+            });
+        }
+        $scope.BackToList = function()
+        {
+            $scope.ShowDetails = false;
+            $scope.CityDetails = {};
+        }
+        $scope.CitySelected = function($cityData)
+        {
+            $scope.ShowDetails = true;
+            $scope.CityDetails = $cityData;
+        }
+    });
+</script>
